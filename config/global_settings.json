@@ -70,7 +70,7 @@
     "captcha": {
         "openCaptchaWebsite": false,
         "notifications": {
-            "enabled": true,
+            "enabled": false,
             "captchaContent": "Captcha Detected: {username} in {channelname}, captcha type: {captchatype}",
             "bannedContent": "{username} Banned from OwO!",
             "reccur": {
@@ -83,7 +83,7 @@
             "path": "Beep.mp3"
         },
         "toastOrPopup": {
-            "enabled": true,
+            "enabled": false,
             "captchaContent": "Captcha Detected! {username}",
             "bannedContent": "{username} Banned from OwO!",
             "termuxToast": {
