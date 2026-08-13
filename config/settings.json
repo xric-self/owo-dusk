@@ -73,13 +73,13 @@
         "shop": {
             "enabled": true,
             "itemsToBuy": {
-                "commonRing": true,
-                "uncommonRing": false,
-                "rareRing": false,
-                "epicRing": false,
-                "mythicalRing": false,
-                "legendaryRing": false,
-                "fabledRing": false
+                "1": true,
+                "2": false,
+                "3": false,
+                "4": false,
+                "5": false,
+                "6": false,
+                "7": false
             },
             "cooldown": [
                  360,
@@ -357,4 +357,4 @@
             }
         ]
     }
-}
+        }
