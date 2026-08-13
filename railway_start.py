@@ -163,26 +163,37 @@ conn.close()
 print("[✓] Database fully initialized.")
 
 # ============================================================
-# Start the web dashboard manually
+# Start the web dashboard manually (with path fix)
 # ============================================================
 if os.getenv("ENABLE_WEBSITE", "true").lower() == "true":
     try:
         from website.website import web_start
 
-        # Read password from global_settings.json
-        with open("global_settings.json", "r") as f:
-            global_settings = json.load(f)
-        password = global_settings.get("website", {}).get("password", "areallylongandsecretpassword")
-        port = global_settings.get("website", {}).get("port", 1200)
-        should_host = global_settings.get("website", {}).get("enableHost", True)
-        version = "unknown"  # Could be replaced with actual version from bot
+        # Locate global_settings.json (root or config/)
+        global_settings_path = None
+        if os.path.exists("global_settings.json"):
+            global_settings_path = "global_settings.json"
+        elif os.path.exists("config/global_settings.json"):
+            global_settings_path = "config/global_settings.json"
+        else:
+            print("[WARN] global_settings.json not found – website may fail.")
 
-        def start_flask():
-            web_start(port, should_host, version, password)
+        if global_settings_path:
+            with open(global_settings_path, "r") as f:
+                global_settings = json.load(f)
+            password = global_settings.get("website", {}).get("password", "areallylongandsecretpassword")
+            port = global_settings.get("website", {}).get("port", 1200)
+            should_host = global_settings.get("website", {}).get("enableHost", True)
+            version = "unknown"  # Could be replaced with actual version
 
-        thread = threading.Thread(target=start_flask, daemon=True)
-        thread.start()
-        print(f"[✓] Website started manually on port {port}")
+            def start_flask():
+                web_start(port, should_host, version, password)
+
+            thread = threading.Thread(target=start_flask, daemon=True)
+            thread.start()
+            print(f"[✓] Website started manually on port {port}")
+        else:
+            print("[WARN] Could not find global_settings.json – website not started.")
     except Exception as e:
         print(f"[ERROR] Failed to start website: {e}")
 
