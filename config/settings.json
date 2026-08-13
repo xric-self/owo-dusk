@@ -1,5 +1,5 @@
 {
-    "setprefix": "owo ",
+    "setprefix": "O",
     "useSlashCommands": false,
     "claimMail": false,
     "autoDaily": true,
@@ -73,13 +73,13 @@
         "shop": {
             "enabled": true,
             "itemsToBuy": {
-                "1": true,
-                "2": false,
-                "3": false,
-                "4": false,
-                "5": false,
-                "6": false,
-                "7": false
+                "commonRing": true,
+                "uncommonRing": false,
+                "rareRing": false,
+                "epicRing": false,
+                "mythicalRing": false,
+                "legendaryRing": false,
+                "fabledRing": false
             },
             "cooldown": [
                  360,
