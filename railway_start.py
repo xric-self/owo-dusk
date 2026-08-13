@@ -50,7 +50,7 @@ with open("tokens.txt", "w", encoding="utf-8") as f:
 print("[✓] tokens.txt written.")
 
 # ============================================================
-# STEP 4: Create the database and all required tables
+# STEP 4: Create the database with all required tables
 # ============================================================
 print("[INFO] Initializing database...")
 
@@ -63,7 +63,9 @@ try:
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    # Create command_priority table
+    # --- Create all tables that the bot expects ---
+
+    # 1. command_priority
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS command_priority (
             user_id TEXT,
@@ -74,7 +76,7 @@ try:
     ''')
     print("[✓] Table 'command_priority' created.")
 
-    # Create user_stats table
+    # 2. user_stats
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS user_stats (
             user_id TEXT PRIMARY KEY,
@@ -93,7 +95,7 @@ try:
     ''')
     print("[✓] Table 'user_stats' created.")
 
-    # Create cowoncy_earnings table
+    # 3. cowoncy_earnings
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS cowoncy_earnings (
             user_id TEXT,
@@ -104,12 +106,54 @@ try:
     ''')
     print("[✓] Table 'cowoncy_earnings' created.")
 
+    # 4. meta_data (key-value store)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS meta_data (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    ''')
+    print("[✓] Table 'meta_data' created.")
+
+    # 5. gamble_entries (if needed)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS gamble_entries (
+            user_id TEXT,
+            gamble_id TEXT,
+            amount INTEGER,
+            result TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    print("[✓] Table 'gamble_entries' created.")
+
+    # 6. lottery_entries (if needed)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS lottery_entries (
+            user_id TEXT,
+            lottery_id TEXT,
+            tickets INTEGER,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    print("[✓] Table 'lottery_entries' created.")
+
+    # Insert some default meta_data values to avoid NULL errors
+    cursor.execute('''
+        INSERT OR IGNORE INTO meta_data (key, value)
+        VALUES 
+            ('cowoncy_earnings_last_checked', '0'),
+            ('last_reset', '0'),
+            ('boss_last_spawn', '0')
+    ''')
     conn.commit()
+    print("[✓] Default meta_data entries inserted.")
+
     conn.close()
-    print(f"[✓] Database initialized at: {db_path}")
+    print(f"[✓] Database fully initialized at: {db_path}")
 
 except Exception as e:
-    print(f"[ERROR] Failed to initialize database: {e}")
+    print(f"[ERROR] Database initialization failed: {e}")
     sys.exit(1)
 
 # ============================================================
