@@ -31,33 +31,43 @@ print(f"[INFO] Token: {token[:10]}... (truncated)")
 print(f"[INFO] Channels: {channel_ids}")
 
 # ============================================================
-# STEP 2: Create tokens.txt
+# STEP 2: Prepare tokens_and_channels list
+# ============================================================
+tokens_and_channels = []
+for cid in channel_ids:
+    try:
+        cid_int = int(cid)
+        tokens_and_channels.append((token, cid_int))
+    except ValueError:
+        print(f"[ERROR] Invalid channel ID (must be integer): {cid}")
+        sys.exit(1)
+
+print(f"[INFO] Prepared {len(tokens_and_channels)} token-channel pair(s).")
+
+# ============================================================
+# STEP 3: Optionally write tokens.txt (some bots expect it)
 # ============================================================
 try:
     with open("tokens.txt", "w", encoding="utf-8") as f:
-        for cid in channel_ids:
-            f.write(f"{token} {cid}\n")
+        for t, c in tokens_and_channels:
+            f.write(f"{t} {c}\n")
     print("[✓] tokens.txt written successfully.")
 except Exception as e:
-    print(f"[ERROR] Could not write tokens.txt: {e}")
-    sys.exit(1)
+    print(f"[WARN] Could not write tokens.txt: {e}")
 
 # ============================================================
-# STEP 3: Launch the bot using run_bots() (reads tokens.txt)
+# STEP 4: Import and call run_bots with the list
 # ============================================================
 try:
-    # Import the correct function that reads tokens.txt and starts threads
-    from core.bot_runner import run_bots  # Note: plural 'run_bots'
+    from core.bot_runner import run_bots
     print("[✓] Imported run_bots successfully.")
 
-    # run_bots() reads tokens.txt automatically and starts all threads
-    print("[INFO] Calling run_bots()...")
-    run_bots()
+    print("[INFO] Calling run_bots(tokens_and_channels)...")
+    run_bots(tokens_and_channels)
     print("[✓] run_bots() returned (should not happen unless it exits)")
 
 except ImportError as e:
     print(f"[ERROR] Failed to import run_bots: {e}")
-    print("Check that core/bot_runner.py exists and contains run_bots.")
     sys.exit(1)
 except Exception as e:
     print(f"[ERROR] run_bots crashed:")
