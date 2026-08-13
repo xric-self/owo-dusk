@@ -1,4 +1,63 @@
-# ... (same imports and env vars as before)
+import os
+import sys
+import sqlite3
+import subprocess
+
+# Force unbuffered output
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
+sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 1)
+
+print("[START] railway_start.py is executing...")
+
+# ============================================================
+# STEP 0: Install missing dependencies (if needed)
+# ============================================================
+try:
+    import playsound3
+except ImportError:
+    print("[INFO] 'playsound3' not found. Installing...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "playsound3"])
+    print("[✓] 'playsound3' installed.")
+
+# ============================================================
+# STEP 1: Read environment variables
+# ============================================================
+token = os.getenv("DISCORD_TOKEN")
+channel_ids_str = os.getenv("CHANNEL_IDS")
+
+if not token or not channel_ids_str:
+    print("[ERROR] DISCORD_TOKEN and CHANNEL_IDS must be set.")
+    sys.exit(1)
+
+channel_ids = [cid.strip() for cid in channel_ids_str.split(",") if cid.strip()]
+if not channel_ids:
+    print("[ERROR] No valid channel IDs.")
+    sys.exit(1)
+
+print(f"[INFO] Token: {token[:10]}... (truncated)")
+print(f"[INFO] Channels: {channel_ids}")
+
+# ============================================================
+# STEP 2: Prepare tokens_and_channels
+# ============================================================
+tokens_and_channels = []
+for cid in channel_ids:
+    try:
+        cid_int = int(cid)
+        tokens_and_channels.append((token, cid_int))
+    except ValueError:
+        print(f"[ERROR] Invalid channel ID: {cid}")
+        sys.exit(1)
+
+print(f"[INFO] Prepared {len(tokens_and_channels)} pair(s).")
+
+# ============================================================
+# STEP 3: Write tokens.txt
+# ============================================================
+with open("tokens.txt", "w", encoding="utf-8") as f:
+    for t, c in tokens_and_channels:
+        f.write(f"{t} {c}\n")
+print("[✓] tokens.txt written.")
 
 # ============================================================
 # STEP 4: Initialize database with ALL required tables
@@ -84,7 +143,7 @@ try:
     ''')
     print("[✓] Table 'lottery_entries' created/verified.")
 
-    # --- Table: gamble_winrate ---
+    # --- Table: gamble_winrate (with net and count) ---
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS gamble_winrate (
             user_id TEXT,
@@ -99,7 +158,7 @@ try:
     ''')
     print("[✓] Table 'gamble_winrate' created/verified.")
 
-    # --- Table: commands (with count and net) ---
+    # --- Table: commands (with net and count) ---
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS commands (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -130,4 +189,20 @@ except Exception as e:
     print(f"[ERROR] Database initialization failed: {e}")
     sys.exit(1)
 
-# ... (rest of the code: import and run_bots)
+# ============================================================
+# STEP 5: Import and run the bot
+# ============================================================
+try:
+    from core.bot_runner import run_bots
+    print("[✓] Imported run_bots successfully.")
+    print("[INFO] Calling run_bots(tokens_and_channels)...")
+    run_bots(tokens_and_channels)
+    print("[✓] run_bots() returned (should not happen).")
+except ImportError as e:
+    print(f"[ERROR] Failed to import run_bots: {e}")
+    sys.exit(1)
+except Exception as e:
+    print(f"[ERROR] run_bots crashed:")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
