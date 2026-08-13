@@ -2,23 +2,19 @@ import os
 import sys
 import sqlite3
 import subprocess
+import json
+import threading
 
+# Force unbuffered output
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
 sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 1)
 
 print("[START] railway_start.py is executing...")
 
 # ============================================================
-# Install all required packages
+# Install missing packages
 # ============================================================
-required_packages = [
-    "numpy",
-    "Pillow",
-    "onnxruntime",
-    "playsound3",
-    "plyer"
-]
-
+required_packages = ["numpy", "Pillow", "onnxruntime", "plyer"]
 missing = []
 for pkg in required_packages:
     try:
@@ -26,21 +22,16 @@ for pkg in required_packages:
             import PIL
         elif pkg == "onnxruntime":
             import onnxruntime
-        elif pkg == "playsound3":
-            import playsound3
         elif pkg == "plyer":
             import plyer
         else:
             import numpy
     except ImportError:
         missing.append(pkg)
-
 if missing:
     print(f"[INFO] Installing missing packages: {', '.join(missing)}")
     subprocess.check_call([sys.executable, "-m", "pip", "install"] + missing)
     print("[✓] Missing packages installed.")
-else:
-    print("[✓] All required packages are already installed.")
 
 # ============================================================
 # Read environment variables
@@ -72,7 +63,7 @@ with open("tokens.txt", "w") as f:
 print("[✓] tokens.txt written.")
 
 # ============================================================
-# Database setup (same as before, with ALTER TABLE)
+# Database setup (with ALTER TABLE for missing columns)
 # ============================================================
 print("[INFO] Initializing database...")
 os.makedirs("utils/data", exist_ok=True)
@@ -170,6 +161,30 @@ cursor.execute('''
 conn.commit()
 conn.close()
 print("[✓] Database fully initialized.")
+
+# ============================================================
+# Start the web dashboard manually
+# ============================================================
+if os.getenv("ENABLE_WEBSITE", "true").lower() == "true":
+    try:
+        from website.website import web_start
+
+        # Read password from global_settings.json
+        with open("global_settings.json", "r") as f:
+            global_settings = json.load(f)
+        password = global_settings.get("website", {}).get("password", "areallylongandsecretpassword")
+        port = global_settings.get("website", {}).get("port", 1200)
+        should_host = global_settings.get("website", {}).get("enableHost", True)
+        version = "unknown"  # Could be replaced with actual version from bot
+
+        def start_flask():
+            web_start(port, should_host, version, password)
+
+        thread = threading.Thread(target=start_flask, daemon=True)
+        thread.start()
+        print(f"[✓] Website started manually on port {port}")
+    except Exception as e:
+        print(f"[ERROR] Failed to start website: {e}")
 
 # ============================================================
 # Start the bot
