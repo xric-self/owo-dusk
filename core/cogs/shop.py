@@ -27,6 +27,17 @@ SHOP-
 
 cash_regex = r"for \*\*(\d+)\*\* <:cowoncy:\d+>"
 
+# Mapping from item name (as in config) to the numeric ID used in `owo buy`
+ITEM_NAME_TO_ID = {
+    "commonRing": "1",
+    "uncommonRing": "2",
+    "rareRing": "3",
+    "epicRing": "4",
+    "mythicalRing": "5",
+    "legendaryRing": "6",
+    "fabledRing": "7",
+}
+
 
 class Shop(BaseCog):
     def __init__(self, bot):
@@ -62,25 +73,29 @@ class Shop(BaseCog):
             await self.bot.remove_queue(id="shop")
             await self.bot.sleep(self.settings.get_cd())
 
-        items_to_buy = self.settings.get_items_to_buy(
+        # Get the list of item names from the config (e.g., ["commonRing"])
+        items_to_buy_names = self.settings.get_items_to_buy(
             cur_cash=self.bot.user_status["balance"],
             cash_check=self.bot.settings_dict.cashCheck,
         )
 
-        # --- FIX: Check if items_to_buy is empty and handle it gracefully ---
-        if not items_to_buy:
+        # --- FIX 1: If empty, retry after a short delay ---
+        if not items_to_buy_names:
             self.bot.logger.info("Shop: No items to buy – skipping this cycle.")
-            # Retry after a short delay instead of crashing
             await asyncio.sleep(30)
             await self.send_buy()
             return
 
-        item = self.bot.random.choice(items_to_buy)
+        # --- FIX 2: Convert the chosen name to its numeric ID ---
+        chosen_name = self.bot.random.choice(items_to_buy_names)
+        item_id = ITEM_NAME_TO_ID.get(chosen_name)
 
-        if item:
-            self.cmd["cmd_arguments"] = item
+        if item_id:
+            self.cmd["cmd_arguments"] = item_id  # Send `owo buy 1` instead of `owo buy commonRing`
             await self.bot.put_queue(self.cmd)
         else:
+            self.bot.logger.warning(f"Shop: Unknown item name '{chosen_name}' – skipping.")
+            await asyncio.sleep(30)
             await self.send_buy()
 
     @commands.Cog.listener()
