@@ -41,14 +41,14 @@
 notify_when_attempting_to_solve = false
 
 [image_solver]
-enabled = false # Change this to true to enable
+enabled = true # Change this to true to enable
 
 [hcaptcha_solver]
-enabled = false # Change this to true to enable
+enabled = true # Change this to true to enable
 
 # Enter your API key from https://yescaptcha.com/i/MNaKrh
 # Leave empty if not using hCaptcha solver
-api_key = ""
+api_key = "a8aef8cdd0144defcf816c1c905b3feee0153e5a135774"
 
 # How may times to retry incase of failures.
 # Recommended -> 3
