@@ -31,7 +31,7 @@
         "commandToRestartAfterCaptcha": "restart_captcha",
         "commandToSleep": "sleep",
         "CommandToSwitchChannel": "switch_channel",
-        "defaultSleepDuration": 600,
+        "defaultSleepDuration": 540,
         "allowedUsers": []
     },
     "webhook": {
@@ -47,7 +47,7 @@
                 "uncommon": false,
                 "rare": false,
                 "epic": false,
-                "mythical": true,
+                "mythical": false,
                 "gem": true,
                 "legendary": true,
                 "fabled": true,
@@ -79,7 +79,7 @@
             }
         },
         "playAudio": {
-            "enabled": true,
+            "enabled": false,
             "path": "Beep.mp3"
         },
         "toastOrPopup": {
@@ -94,7 +94,7 @@
         },
         "termux": {
             "vibrate": {
-                "enabled": true,
+                "enabled": false,
                 "time": 5
             },
             "textToSpeech": {
@@ -111,7 +111,7 @@
         "refreshInterval": 120
     },
     "channelSwitcher": {
-        "enabled": false,
+        "enabled": true,
         "allUsers": {
             "channels": [1,2,3]
         },
