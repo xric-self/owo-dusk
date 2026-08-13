@@ -10,7 +10,7 @@ sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 1)
 print("[START] railway_start.py is executing...")
 
 # ============================================================
-# STEP 0: Install missing dependencies
+# STEP 0: Install missing dependencies (if needed)
 # ============================================================
 try:
     import playsound3
@@ -60,7 +60,7 @@ with open("tokens.txt", "w", encoding="utf-8") as f:
 print("[✓] tokens.txt written.")
 
 # ============================================================
-# STEP 4: Initialize database with all tables
+# STEP 4: Initialize database with ALL required tables
 # ============================================================
 print("[INFO] Initializing database...")
 os.makedirs("utils/data", exist_ok=True)
@@ -70,6 +70,7 @@ try:
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
+    # --- Table: command_priority ---
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS command_priority (
             user_id TEXT,
@@ -78,6 +79,9 @@ try:
             PRIMARY KEY (user_id, command_name)
         )
     ''')
+    print("[✓] Table 'command_priority' created/verified.")
+
+    # --- Table: user_stats ---
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS user_stats (
             user_id TEXT PRIMARY KEY,
@@ -94,6 +98,9 @@ try:
             army INTEGER DEFAULT 0
         )
     ''')
+    print("[✓] Table 'user_stats' created/verified.")
+
+    # --- Table: cowoncy_earnings ---
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS cowoncy_earnings (
             user_id TEXT,
@@ -102,12 +109,18 @@ try:
             PRIMARY KEY (user_id, hour)
         )
     ''')
+    print("[✓] Table 'cowoncy_earnings' created/verified.")
+
+    # --- Table: meta_data ---
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS meta_data (
             key TEXT PRIMARY KEY,
             value TEXT
         )
     ''')
+    print("[✓] Table 'meta_data' created/verified.")
+
+    # --- Table: gamble_entries (already added) ---
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS gamble_entries (
             user_id TEXT,
@@ -117,6 +130,9 @@ try:
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    print("[✓] Table 'gamble_entries' created/verified.")
+
+    # --- Table: lottery_entries (already added) ---
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS lottery_entries (
             user_id TEXT,
@@ -125,6 +141,33 @@ try:
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    print("[✓] Table 'lottery_entries' created/verified.")
+
+    # --- NEW: Table: gamble_winrate ---
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS gamble_winrate (
+            user_id TEXT,
+            command_name TEXT,
+            wins INTEGER DEFAULT 0,
+            losses INTEGER DEFAULT 0,
+            total_gambles INTEGER DEFAULT 0,
+            PRIMARY KEY (user_id, command_name)
+        )
+    ''')
+    print("[✓] Table 'gamble_winrate' created/verified.")
+
+    # --- NEW: Table: commands (command usage stats) ---
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS commands (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT,
+            command_name TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    print("[✓] Table 'commands' created/verified.")
+
+    # Insert default meta_data entries if not present
     cursor.execute('''
         INSERT OR IGNORE INTO meta_data (key, value)
         VALUES 
@@ -133,8 +176,11 @@ try:
             ('boss_last_spawn', '0')
     ''')
     conn.commit()
+    print("[✓] Default meta_data entries inserted.")
+
     conn.close()
-    print(f"[✓] Database initialized at: {db_path}")
+    print(f"[✓] Database fully initialized at: {db_path}")
+
 except Exception as e:
     print(f"[ERROR] Database initialization failed: {e}")
     sys.exit(1)
