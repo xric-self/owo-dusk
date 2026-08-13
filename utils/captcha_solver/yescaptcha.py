@@ -1,28 +1,16 @@
-# This file is part of owo-dusk.
-#
-# Copyright (c) 2024-present EchoQuill
-#
-# Portions of this file are based on code by EchoQuill, licensed under the
-# GNU General Public License v3.0 (GPL-3.0).
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
 import os
 import aiohttp
 import json
-from gatesolve import GateSolve
+from nonecap import NoneCapClient  # pip install nonecap
 
 class captchaClient:
     def __init__(self, api):
-        # api is the GateSolve API key (optional, can be read from env)
-        self.api = api or os.getenv("GATESOLVE_API_KEY")
+        # Read API key from environment variable
+        self.api = api or os.getenv("NONECAP_API_KEY")
         if not self.api:
-            raise ValueError("GateSolve API key is required. Set GATESOLVE_API_KEY environment variable.")
-        self.balance = 999  # dummy balance – GateSolve has a free tier; we ignore balance checks
-        self._site_key = "a6a1d5ce-612d-472d-8e37-7601408fbc09"  # OwO's site key
+            raise ValueError("NoneCap API key required. Set NONECAP_API_KEY environment variable.")
+        self.balance = 999  # dummy balance
+        self._site_key = "a6a1d5ce-612d-472d-8e37-7601408fbc09"
         self._payload = {
             "authorize": True,
             "integration_type": 0,
@@ -35,41 +23,22 @@ class captchaClient:
         }
         self._auth_url = r"https://discord.com/api/v9/oauth2/authorize?client_id=408785106942164992&response_type=code&redirect_uri=https://owobot.com/api/auth/discord/redirect&scope=identify guilds"
 
-    # Dummy balance methods – GateSolve has free credits; we don't need to check balance.
-    def get_yescaptcha_balance_sync(self):
-        return 999
-
-    async def get_yescaptcha_balance(self, session: aiohttp.ClientSession) -> int:
-        return 999
-
-    async def update_balance(self):
-        self.balance = 999
-
     async def solve_hcaptcha_logic(self, retries=3):
-        """
-        Solve hCaptcha using GateSolve API.
-        Returns the captcha token.
-        """
-        client = GateSolve(api_key=self.api)
+        """Solve hCaptcha using NoneCap API"""
+        client = NoneCapClient(api_key=self.api)
         try:
-            token = client.solve(
-                "hcaptcha",
+            token = client.solve_hcaptcha(
                 site_key=self._site_key,
                 page_url="https://owobot.com/captcha"
             )
             return token
         except Exception as e:
-            print(f"GateSolve solving error: {e}")
+            print(f"NoneCap solving error: {e}")
             return None
 
     async def solve_owo_bot_captcha(self, discord_headers, tries):
-        """
-        Main entry point called by the bot to solve the captcha.
-        Returns True if solved, False otherwise.
-        """
-        # Set up the OAuth flow (same as original)
+        """Main entry point: solve captcha and return True/False"""
         discord_headers["Referer"] = self._auth_url
-
         async with aiohttp.ClientSession() as session:
             # 1. OAuth authorize
             async with session.post(
@@ -83,7 +52,7 @@ class captchaClient:
                     return False
                 oauth_text = await oauth_resp.text()
 
-            # 2. Follow redirect if present
+            # 2. Follow redirect
             try:
                 oauth_json = json.loads(oauth_text)
                 redirect_url = oauth_json.get("location")
@@ -94,7 +63,6 @@ class captchaClient:
                             return False
             except Exception as e:
                 print(f"OAuth parsing failed: {e}")
-                print(f"Raw response: {oauth_text}")
                 return False
 
             # 3. Hit captcha page to set cookies
@@ -113,17 +81,17 @@ class captchaClient:
                 print("Auth data None")
                 return False
 
-            # 5. Solve using GateSolve
+            # 5. Solve using NoneCap
             try:
                 solution = await self.solve_hcaptcha_logic(tries)
                 if not solution:
-                    print("No solution result from GateSolve")
+                    print("No solution from NoneCap")
                     return False
             except Exception as e:
                 print(f"Solver Error: {e}")
                 return False
 
-            # 6. Submit the solution
+            # 6. Submit the token
             async with session.post(
                 "https://owobot.com/api/captcha/verify",
                 json={"token": solution},
