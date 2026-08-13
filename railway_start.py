@@ -1,5 +1,6 @@
 import os
 import sys
+import sqlite3
 import time
 
 # Force unbuffered output
@@ -45,7 +46,7 @@ for cid in channel_ids:
 print(f"[INFO] Prepared {len(tokens_and_channels)} token-channel pair(s).")
 
 # ============================================================
-# STEP 3: Optionally write tokens.txt (some bots expect it)
+# STEP 3: Write tokens.txt
 # ============================================================
 try:
     with open("tokens.txt", "w", encoding="utf-8") as f:
@@ -56,7 +57,49 @@ except Exception as e:
     print(f"[WARN] Could not write tokens.txt: {e}")
 
 # ============================================================
-# STEP 4: Import and call run_bots with the list
+# STEP 4: Initialize SQLite database (fix missing table)
+# ============================================================
+print("[INFO] Checking database and creating missing tables if needed...")
+try:
+    # The bot likely uses a database file in the current directory.
+    # We'll look for the most common name: owo.db, dusk.db, or bot.db.
+    # If not found, we'll create a default one.
+    db_path = None
+    for f in os.listdir("."):
+        if f.endswith(".db"):
+            db_path = f
+            break
+    if not db_path:
+        # Default name used in the bot (common)
+        db_path = "owo.db"
+        print(f"[INFO] No existing .db file found. Will create {db_path}.")
+    
+    # Connect to the database (creates if not exists)
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    # Create the command_priority table if it doesn't exist
+    # The bot queries: SELECT * FROM command_priority WHERE user_id = ?
+    # So we need at least a user_id column. We'll add a priority column as well.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS command_priority (
+            user_id TEXT PRIMARY KEY,
+            priority INTEGER DEFAULT 0
+        )
+    ''')
+    conn.commit()
+    print(f"[✓] Database table 'command_priority' created (if not existed).")
+    
+    # Optionally, we could check if other tables exist, but we'll stop here.
+    conn.close()
+    print("[✓] Database initialization complete.")
+    
+except Exception as e:
+    print(f"[ERROR] Database initialization failed: {e}")
+    # Continue anyway – the bot might handle it gracefully, but we'll proceed.
+
+# ============================================================
+# STEP 5: Import and call run_bots with the list
 # ============================================================
 try:
     from core.bot_runner import run_bots
