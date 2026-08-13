@@ -111,7 +111,7 @@
         "refreshInterval": 120
     },
     "channelSwitcher": {
-        "enabled": true,
+        "enabled": false,
         "allUsers": {
             "channels": [1,2,3]
         },
