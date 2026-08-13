@@ -1,13 +1,23 @@
 import os
 import sys
 import sqlite3
-import time
+import subprocess
 
 # Force unbuffered output
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
 sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 1)
 
 print("[START] railway_start.py is executing...")
+
+# ============================================================
+# STEP 0: Install missing dependencies
+# ============================================================
+try:
+    import playsound3
+except ImportError:
+    print("[INFO] 'playsound3' not found. Installing...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "playsound3"])
+    print("[✓] 'playsound3' installed.")
 
 # ============================================================
 # STEP 1: Read environment variables
@@ -50,22 +60,16 @@ with open("tokens.txt", "w", encoding="utf-8") as f:
 print("[✓] tokens.txt written.")
 
 # ============================================================
-# STEP 4: Create the database with all required tables
+# STEP 4: Initialize database with all tables
 # ============================================================
 print("[INFO] Initializing database...")
-
-# Ensure the utils/data directory exists
 os.makedirs("utils/data", exist_ok=True)
-
 db_path = "utils/data/db.sqlite"
 
 try:
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    # --- Create all tables that the bot expects ---
-
-    # 1. command_priority
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS command_priority (
             user_id TEXT,
@@ -74,9 +78,6 @@ try:
             PRIMARY KEY (user_id, command_name)
         )
     ''')
-    print("[✓] Table 'command_priority' created.")
-
-    # 2. user_stats
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS user_stats (
             user_id TEXT PRIMARY KEY,
@@ -93,9 +94,6 @@ try:
             army INTEGER DEFAULT 0
         )
     ''')
-    print("[✓] Table 'user_stats' created.")
-
-    # 3. cowoncy_earnings
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS cowoncy_earnings (
             user_id TEXT,
@@ -104,18 +102,12 @@ try:
             PRIMARY KEY (user_id, hour)
         )
     ''')
-    print("[✓] Table 'cowoncy_earnings' created.")
-
-    # 4. meta_data (key-value store)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS meta_data (
             key TEXT PRIMARY KEY,
             value TEXT
         )
     ''')
-    print("[✓] Table 'meta_data' created.")
-
-    # 5. gamble_entries (if needed)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS gamble_entries (
             user_id TEXT,
@@ -125,9 +117,6 @@ try:
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    print("[✓] Table 'gamble_entries' created.")
-
-    # 6. lottery_entries (if needed)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS lottery_entries (
             user_id TEXT,
@@ -136,9 +125,6 @@ try:
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    print("[✓] Table 'lottery_entries' created.")
-
-    # Insert some default meta_data values to avoid NULL errors
     cursor.execute('''
         INSERT OR IGNORE INTO meta_data (key, value)
         VALUES 
@@ -147,11 +133,8 @@ try:
             ('boss_last_spawn', '0')
     ''')
     conn.commit()
-    print("[✓] Default meta_data entries inserted.")
-
     conn.close()
-    print(f"[✓] Database fully initialized at: {db_path}")
-
+    print(f"[✓] Database initialized at: {db_path}")
 except Exception as e:
     print(f"[ERROR] Database initialization failed: {e}")
     sys.exit(1)
