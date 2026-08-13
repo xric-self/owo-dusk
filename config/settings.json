@@ -24,7 +24,7 @@
             "notifyStreakLoss": false
         },
         "pray": {
-            "enabled": false,
+            "enabled": true,
             "cooldown": [
                 310,
                 400
@@ -38,10 +38,10 @@
             "count": false
         },
         "curse": {
-            "enabled": false,
+            "enabled": true,
             "cooldown": [
-                310,
-                400
+                320,
+                410
             ],
             "userid": [],
             "pingUser": false,
@@ -71,7 +71,7 @@
             "pingUser": false
         },
         "shop": {
-            "enabled": false,
+            "enabled": true,
             "itemsToBuy": {
                 "commonRing": true,
                 "uncommonRing": false,
@@ -82,23 +82,23 @@
                 "fabledRing": false
             },
             "cooldown": [
-                10,
-                16
+                 360,
+                1600
             ]
         },
         "owo": {
             "enabled": true,
             "prioritise": false,
             "cooldown": [
-                10,
-                13
+                19,
+                31
             ]
         },
         "autoHuntBot": {
-            "enabled": false,
-            "cashToSpend": 10000,
+            "enabled": true,
+            "cashToSpend": 30000,
             "upgrader": {
-                "enabled": true,
+                "enabled": false,
                 "traits": {
                     "efficiency": true,
                     "duration": true,
@@ -122,24 +122,24 @@
             }
         },
         "pup": {
-            "enabled": false,
+            "enabled": true,
             "cooldown": [
                 60,
                 70
             ]
         },
         "piku": {
-            "enabled": false,
+            "enabled": true,
             "cooldown": [
-                60,
-                70
+                65,
+                75
             ]
         },
         "army": {
-            "enabled": false,
+            "enabled": true,
             "cooldown": [
-                61,
-                70
+                67,
+                74
             ]
         }
     },
@@ -218,7 +218,7 @@
     },
     "bossBattle": {
         "enabled": false,
-        "joinChancePercent": 80,
+        "joinChancePercent": 25,
         "joinAllGuilds": true,
         "guildJoinRules": {
             "ignoreGuildIds": [],
@@ -226,7 +226,7 @@
         }
     },
     "giveawayJoiner": {
-        "enabled": false,
+        "enabled": true,
         "channelsToJoin": [
             "1099453684691243098",
             "1168797748343099444",
@@ -239,7 +239,7 @@
         "messageRangeToCheck": 6
     },
     "sleep": {
-        "enabled": false,
+        "enabled": true,
         "frequencyPercentage": 50,
         "checkTime": [
             10,
@@ -251,8 +251,8 @@
         ]
     },
     "misspell": {
-        "enabled": false,
-        "frequencyPercentage": 1,
+        "enabled": true,
+        "frequencyPercentage": 29,
         "baseDelay": [
             0.03,
             0.07
@@ -318,24 +318,24 @@
             },
             "tiers": {
                 "common": true,
-                "uncommon": true,
-                "rare": true,
-                "epic": true,
+                "uncommon": false,
+                "rare": false,
+                "epic": false,
                 "mythical": false,
                 "legendary": false,
                 "fabled": false
             },
             "gemsToUse": {
                 "huntGem": true,
-                "empoweredGem": true,
+                "empoweredGem": false,
                 "luckyGem": true,
-                "specialGem": true
+                "specialGem": false
             },
             "dynamicSpecialGemUsage": true,
             "disableHuntIfNoGems": false
         },
-        "autoLootbox": true,
-        "autoCrate": true
+        "autoLootbox": false,
+        "autoCrate": false
     },
     "customCommands": {
         "enabled": false,
