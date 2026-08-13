@@ -240,7 +240,7 @@
     },
     "sleep": {
         "enabled": true,
-        "frequencyPercentage": 50,
+        "frequencyPercentage": 10,
         "checkTime": [
             10,
             20
