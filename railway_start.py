@@ -10,14 +10,22 @@ sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 1)
 print("[START] railway_start.py is executing...")
 
 # ============================================================
-# STEP 0: Install missing dependencies (if needed)
+# STEP 0: Install missing dependencies (including plyer)
 # ============================================================
+missing_packages = []
 try:
     import playsound3
 except ImportError:
-    print("[INFO] 'playsound3' not found. Installing...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "playsound3"])
-    print("[✓] 'playsound3' installed.")
+    missing_packages.append("playsound3")
+try:
+    import plyer
+except ImportError:
+    missing_packages.append("plyer")
+
+if missing_packages:
+    print(f"[INFO] Installing missing packages: {', '.join(missing_packages)}")
+    subprocess.check_call([sys.executable, "-m", "pip", "install"] + missing_packages)
+    print("[✓] Missing packages installed.")
 
 # ============================================================
 # STEP 1: Read environment variables
@@ -60,7 +68,7 @@ with open("tokens.txt", "w", encoding="utf-8") as f:
 print("[✓] tokens.txt written.")
 
 # ============================================================
-# STEP 4: Initialize database with ALL required tables
+# STEP 4: Initialize database with ALL required tables and columns
 # ============================================================
 print("[INFO] Initializing database...")
 os.makedirs("utils/data", exist_ok=True)
@@ -81,10 +89,11 @@ try:
     ''')
     print("[✓] Table 'command_priority' created/verified.")
 
-    # --- Table: user_stats ---
+    # --- Table: user_stats (add 'name' column) ---
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS user_stats (
             user_id TEXT PRIMARY KEY,
+            name TEXT,
             daily INTEGER DEFAULT 0,
             lottery INTEGER DEFAULT 0,
             cookie INTEGER DEFAULT 0,
@@ -100,7 +109,7 @@ try:
     ''')
     print("[✓] Table 'user_stats' created/verified.")
 
-    # --- Table: cowoncy_earnings ---
+    # --- Table: cowoncy_earnings (already has hour) ---
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS cowoncy_earnings (
             user_id TEXT,
@@ -143,7 +152,7 @@ try:
     ''')
     print("[✓] Table 'lottery_entries' created/verified.")
 
-    # --- Table: gamble_winrate (with net and count) ---
+    # --- Table: gamble_winrate (add hour and name) ---
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS gamble_winrate (
             user_id TEXT,
@@ -153,12 +162,14 @@ try:
             total_gambles INTEGER DEFAULT 0,
             net INTEGER DEFAULT 0,
             count INTEGER DEFAULT 0,
+            hour INTEGER DEFAULT 0,
+            name TEXT,
             PRIMARY KEY (user_id, command_name)
         )
     ''')
     print("[✓] Table 'gamble_winrate' created/verified.")
 
-    # --- Table: commands (with net and count) ---
+    # --- Table: commands (add hour and name) ---
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS commands (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -166,7 +177,9 @@ try:
             command_name TEXT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             count INTEGER DEFAULT 1,
-            net INTEGER DEFAULT 0
+            net INTEGER DEFAULT 0,
+            hour INTEGER DEFAULT 0,
+            name TEXT
         )
     ''')
     print("[✓] Table 'commands' created/verified.")
@@ -190,7 +203,14 @@ except Exception as e:
     sys.exit(1)
 
 # ============================================================
-# STEP 5: Import and run the bot
+# STEP 5: Suppress audio backend errors (optional)
+# ============================================================
+# We can set an environment variable to prevent audio errors
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+# But the playsound3 error will still appear; we can ignore it.
+
+# ============================================================
+# STEP 6: Import and run the bot
 # ============================================================
 try:
     from core.bot_runner import run_bots
