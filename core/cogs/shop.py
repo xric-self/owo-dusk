@@ -81,7 +81,7 @@ class Shop(BaseCog):
 
         # --- FIX 1: If empty, retry after a short delay ---
         if not items_to_buy_names:
-            self.bot.logger.info("Shop: No items to buy – skipping this cycle.")
+            print("[Shop] No items to buy – skipping this cycle.")
             await asyncio.sleep(30)
             await self.send_buy()
             return
@@ -94,7 +94,7 @@ class Shop(BaseCog):
             self.cmd["cmd_arguments"] = item_id  # Send `owo buy 1` instead of `owo buy commonRing`
             await self.bot.put_queue(self.cmd)
         else:
-            self.bot.logger.warning(f"Shop: Unknown item name '{chosen_name}' – skipping.")
+            print(f"[Shop] Unknown item name '{chosen_name}' – skipping.")
             await asyncio.sleep(30)
             await self.send_buy()
 
