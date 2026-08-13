@@ -251,7 +251,7 @@
         ]
     },
     "misspell": {
-        "enabled": true,
+        "enabled": false,
         "frequencyPercentage": 29,
         "baseDelay": [
             0.03,
