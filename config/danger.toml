@@ -29,4 +29,4 @@ allow_quotes = false
 # We have tried our best to fix any such issues, but it could still break
 # somewhere. Use at your own risk!
 
-allow_custom_channels = false
+allow_custom_channels = true
