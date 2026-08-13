@@ -8,7 +8,7 @@
         "port": 1200,
         "refreshInterval": 15,
         "password": "areallylongandsecretpassword",
-        "enableHost": false
+        "enableHost": true
     },
     "account": {
         "startupDelay": [
@@ -128,4 +128,4 @@
         "interval": [20, 40],
         "delayBeforeSwitch": [2,4]
     }
-}
+        }
