@@ -26,4 +26,4 @@ Werkzeug==3.1.8
 yarl==1.24.5
 aiosqlite==0.22.1
 playsound3
-gatesolve
+nonecap
