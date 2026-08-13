@@ -10,18 +10,19 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 
-import asyncio
-import json
-
+import os
 import aiohttp
-import requests
-
+import json
+from gatesolve import GateSolve
 
 class captchaClient:
     def __init__(self, api):
-        self.api = api
-        self.balance = self.get_yescaptcha_balance_sync() or 0
-        self._site_key = "a6a1d5ce-612d-472d-8e37-7601408fbc09"
+        # api is the GateSolve API key (optional, can be read from env)
+        self.api = api or os.getenv("GATESOLVE_API_KEY")
+        if not self.api:
+            raise ValueError("GateSolve API key is required. Set GATESOLVE_API_KEY environment variable.")
+        self.balance = 999  # dummy balance – GateSolve has a free tier; we ignore balance checks
+        self._site_key = "a6a1d5ce-612d-472d-8e37-7601408fbc09"  # OwO's site key
         self._payload = {
             "authorize": True,
             "integration_type": 0,
@@ -34,120 +35,43 @@ class captchaClient:
         }
         self._auth_url = r"https://discord.com/api/v9/oauth2/authorize?client_id=408785106942164992&response_type=code&redirect_uri=https://owobot.com/api/auth/discord/redirect&scope=identify guilds"
 
-    # We aren't supposed to use sync copies for this.. There must be a better solution
-    # Double check - for the time being it works!
+    # Dummy balance methods – GateSolve has free credits; we don't need to check balance.
     def get_yescaptcha_balance_sync(self):
-        url = "https://api.yescaptcha.com/getBalance"
-        try:
-            response = requests.post(url, json={"clientKey": self.api}, timeout=10)
-            data = response.json()
-            return int(data.get("balance", 0)) if data.get("errorId") == 0 else 0
-        except Exception:
-            return 0
+        return 999
 
     async def get_yescaptcha_balance(self, session: aiohttp.ClientSession) -> int:
-        url = "https://api.yescaptcha.com/getBalance"
-        try:
-            # aiohttp uses total timeout instead of a simple integer
-            timeout = aiohttp.ClientTimeout(total=10)
-
-            async with session.post(
-                url, json={"clientKey": self.api}, timeout=timeout
-            ) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    return (
-                        int(data.get("balance", 0)) if data.get("errorId") == 0 else 0
-                    )
-                return 0
-        except Exception:
-            return 0
+        return 999
 
     async def update_balance(self):
-        async with aiohttp.ClientSession() as session:
-            self.balance = await self.get_yescaptcha_balance(session)
+        self.balance = 999
 
     async def solve_hcaptcha_logic(self, retries=3):
         """
-        Attempts to solve the captcha using Yescaptcha.
-        Retries creating a new task 'retries' times upon failure.
+        Solve hCaptcha using GateSolve API.
+        Returns the captcha token.
         """
-        create_url = "https://api.yescaptcha.com/createTask"
-        result_url = "https://api.yescaptcha.com/getTaskResult"
-
-        payload = {
-            "clientKey": self.api,
-            "task": {
-                "type": "HCaptchaTaskProxyless",
-                "websiteKey": self._site_key,
-                "websiteURL": "https://owobot.com",
-            },
-            "softID": 94493,
-        }
-
-        async with aiohttp.ClientSession() as session:
-            for attempt in range(retries):
-                try:
-                    print(f"Solving captcha... Attempt {attempt + 1}/{retries}")
-
-                    async with session.post(create_url, json=payload) as resp:
-                        if resp.status != 200:
-                            raise Exception(
-                                f"Create task failed with HTTP {resp.status}"
-                            )
-                        data = await resp.json()
-
-                    if data.get("errorId") != 0:
-                        raise Exception(f"API Error: {data.get('errorDescription')}")
-
-                    task_id = data.get("taskId")
-                    if not task_id:
-                        raise Exception("No taskId returned from API")
-
-                    for _ in range(60):
-                        await asyncio.sleep(2)
-
-                        async with session.post(
-                            result_url,
-                            json={"clientKey": self.api, "taskId": task_id},
-                        ) as result_resp:
-                            if result_resp.status != 200:
-                                raise Exception(
-                                    f"Result check failed with HTTP {result_resp.status}"
-                                )
-
-                            res = await result_resp.json()
-
-                        if res.get("errorId") != 0:
-                            # Logic error from solver side
-                            raise Exception(
-                                f"Polling API Error: {res.get('errorDescription')}"
-                            )
-
-                        if res.get("status") == "ready":
-                            return res["solution"]["gRecaptchaResponse"]
-
-                    raise Exception("Task timed out without becoming 'ready'")
-
-                except Exception as e:
-                    print(f"Attempt {attempt + 1} failed: {e}")
-                    if attempt < retries:
-                        print("Retrying with a new task...")
-                        await asyncio.sleep(1)
-                    else:
-                        print("All retry attempts exhausted.")
-
+        client = GateSolve(api_key=self.api)
+        try:
+            token = client.solve(
+                "hcaptcha",
+                site_key=self._site_key,
+                page_url="https://owobot.com/captcha"
+            )
+            return token
+        except Exception as e:
+            print(f"GateSolve solving error: {e}")
             return None
 
     async def solve_owo_bot_captcha(self, discord_headers, tries):
+        """
+        Main entry point called by the bot to solve the captcha.
+        Returns True if solved, False otherwise.
+        """
+        # Set up the OAuth flow (same as original)
         discord_headers["Referer"] = self._auth_url
-        await self.update_balance()
-        if self.balance < 30:
-            print("Not enough balance")
-            return False
 
         async with aiohttp.ClientSession() as session:
-            # Authorize via Discord
+            # 1. OAuth authorize
             async with session.post(
                 self._auth_url,
                 json=self._payload,
@@ -157,14 +81,12 @@ class captchaClient:
                 if oauth_resp.status != 200:
                     print(f"OAuth failed with HTTP {oauth_resp.status}")
                     return False
-
                 oauth_text = await oauth_resp.text()
 
             # 2. Follow redirect if present
             try:
                 oauth_json = json.loads(oauth_text)
                 redirect_url = oauth_json.get("location")
-
                 if redirect_url:
                     async with session.get(redirect_url) as redirect_resp:
                         if redirect_resp.status != 200:
@@ -175,7 +97,7 @@ class captchaClient:
                 print(f"Raw response: {oauth_text}")
                 return False
 
-            # 3. Hit captcha page to ensure session cookies are set
+            # 3. Hit captcha page to set cookies
             async with session.get("https://owobot.com/captcha") as captcha_resp:
                 if captcha_resp.status != 200:
                     print(f"Captcha page failed with HTTP {captcha_resp.status}")
@@ -186,22 +108,22 @@ class captchaClient:
                 if auth_resp.status != 200:
                     print(f"Auth check failed with HTTP {auth_resp.status}")
                     return False
-
                 auth_data = await auth_resp.json()
-
             if not auth_data:
                 print("Auth data None")
                 return False
 
+            # 5. Solve using GateSolve
             try:
                 solution = await self.solve_hcaptcha_logic(tries)
                 if not solution:
-                    print("No solution result found for Hcaptcha")
+                    print("No solution result from GateSolve")
                     return False
             except Exception as e:
                 print(f"Solver Error: {e}")
                 return False
 
+            # 6. Submit the solution
             async with session.post(
                 "https://owobot.com/api/captcha/verify",
                 json={"token": solution},
@@ -213,7 +135,6 @@ class captchaClient:
                 },
             ) as verify_resp:
                 if verify_resp.status == 200:
-                    await self.update_balance()
                     return True
                 else:
                     error_text = await verify_resp.text()
