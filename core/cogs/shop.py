@@ -67,6 +67,14 @@ class Shop(BaseCog):
             cash_check=self.bot.settings_dict.cashCheck,
         )
 
+        # --- FIX: Check if items_to_buy is empty and handle it gracefully ---
+        if not items_to_buy:
+            self.bot.logger.info("Shop: No items to buy – skipping this cycle.")
+            # Retry after a short delay instead of crashing
+            await asyncio.sleep(30)
+            await self.send_buy()
+            return
+
         item = self.bot.random.choice(items_to_buy)
 
         if item:
