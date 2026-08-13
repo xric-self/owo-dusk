@@ -15,24 +15,20 @@ print("[START] railway_start.py is executing...")
 token = os.getenv("DISCORD_TOKEN")
 channel_ids_str = os.getenv("CHANNEL_IDS")
 
-if not token:
-    print("[ERROR] DISCORD_TOKEN environment variable is not set.")
-    sys.exit(1)
-
-if not channel_ids_str:
-    print("[ERROR] CHANNEL_IDS environment variable is not set.")
+if not token or not channel_ids_str:
+    print("[ERROR] DISCORD_TOKEN and CHANNEL_IDS must be set.")
     sys.exit(1)
 
 channel_ids = [cid.strip() for cid in channel_ids_str.split(",") if cid.strip()]
 if not channel_ids:
-    print("[ERROR] No valid channel IDs found.")
+    print("[ERROR] No valid channel IDs.")
     sys.exit(1)
 
 print(f"[INFO] Token: {token[:10]}... (truncated)")
 print(f"[INFO] Channels: {channel_ids}")
 
 # ============================================================
-# STEP 2: Prepare tokens_and_channels list
+# STEP 2: Prepare tokens_and_channels
 # ============================================================
 tokens_and_channels = []
 for cid in channel_ids:
@@ -40,75 +36,91 @@ for cid in channel_ids:
         cid_int = int(cid)
         tokens_and_channels.append((token, cid_int))
     except ValueError:
-        print(f"[ERROR] Invalid channel ID (must be integer): {cid}")
+        print(f"[ERROR] Invalid channel ID: {cid}")
         sys.exit(1)
 
-print(f"[INFO] Prepared {len(tokens_and_channels)} token-channel pair(s).")
+print(f"[INFO] Prepared {len(tokens_and_channels)} pair(s).")
 
 # ============================================================
 # STEP 3: Write tokens.txt
 # ============================================================
-try:
-    with open("tokens.txt", "w", encoding="utf-8") as f:
-        for t, c in tokens_and_channels:
-            f.write(f"{t} {c}\n")
-    print("[✓] tokens.txt written successfully.")
-except Exception as e:
-    print(f"[WARN] Could not write tokens.txt: {e}")
+with open("tokens.txt", "w", encoding="utf-8") as f:
+    for t, c in tokens_and_channels:
+        f.write(f"{t} {c}\n")
+print("[✓] tokens.txt written.")
 
 # ============================================================
-# STEP 4: Initialize SQLite database (fix missing table)
+# STEP 4: Create the database and all required tables
 # ============================================================
-print("[INFO] Checking database and creating missing tables if needed...")
+print("[INFO] Initializing database...")
+
+# Ensure the utils/data directory exists
+os.makedirs("utils/data", exist_ok=True)
+
+db_path = "utils/data/db.sqlite"
+
 try:
-    # The bot likely uses a database file in the current directory.
-    # We'll look for the most common name: owo.db, dusk.db, or bot.db.
-    # If not found, we'll create a default one.
-    db_path = None
-    for f in os.listdir("."):
-        if f.endswith(".db"):
-            db_path = f
-            break
-    if not db_path:
-        # Default name used in the bot (common)
-        db_path = "owo.db"
-        print(f"[INFO] No existing .db file found. Will create {db_path}.")
-    
-    # Connect to the database (creates if not exists)
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
-    # Create the command_priority table if it doesn't exist
-    # The bot queries: SELECT * FROM command_priority WHERE user_id = ?
-    # So we need at least a user_id column. We'll add a priority column as well.
+
+    # Create command_priority table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS command_priority (
-            user_id TEXT PRIMARY KEY,
-            priority INTEGER DEFAULT 0
+            user_id TEXT,
+            command_name TEXT,
+            priority INTEGER,
+            PRIMARY KEY (user_id, command_name)
         )
     ''')
+    print("[✓] Table 'command_priority' created.")
+
+    # Create user_stats table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_stats (
+            user_id TEXT PRIMARY KEY,
+            daily INTEGER DEFAULT 0,
+            lottery INTEGER DEFAULT 0,
+            cookie INTEGER DEFAULT 0,
+            giveaways INTEGER DEFAULT 0,
+            captchas INTEGER DEFAULT 0,
+            cowoncy INTEGER DEFAULT 0,
+            boss INTEGER DEFAULT 0,
+            boss_ticket INTEGER DEFAULT 0,
+            pup INTEGER DEFAULT 0,
+            piku INTEGER DEFAULT 0,
+            army INTEGER DEFAULT 0
+        )
+    ''')
+    print("[✓] Table 'user_stats' created.")
+
+    # Create cowoncy_earnings table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS cowoncy_earnings (
+            user_id TEXT,
+            hour INTEGER,
+            earnings INTEGER DEFAULT 0,
+            PRIMARY KEY (user_id, hour)
+        )
+    ''')
+    print("[✓] Table 'cowoncy_earnings' created.")
+
     conn.commit()
-    print(f"[✓] Database table 'command_priority' created (if not existed).")
-    
-    # Optionally, we could check if other tables exist, but we'll stop here.
     conn.close()
-    print("[✓] Database initialization complete.")
-    
+    print(f"[✓] Database initialized at: {db_path}")
+
 except Exception as e:
-    print(f"[ERROR] Database initialization failed: {e}")
-    # Continue anyway – the bot might handle it gracefully, but we'll proceed.
+    print(f"[ERROR] Failed to initialize database: {e}")
+    sys.exit(1)
 
 # ============================================================
-# STEP 5: Import and call run_bots with the list
+# STEP 5: Import and run the bot
 # ============================================================
 try:
     from core.bot_runner import run_bots
     print("[✓] Imported run_bots successfully.")
-
     print("[INFO] Calling run_bots(tokens_and_channels)...")
     run_bots(tokens_and_channels)
-    print("[✓] run_bots() returned (should not happen unless it exits)")
-
+    print("[✓] run_bots() returned (should not happen).")
 except ImportError as e:
     print(f"[ERROR] Failed to import run_bots: {e}")
     sys.exit(1)
