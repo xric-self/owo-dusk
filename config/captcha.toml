@@ -38,7 +38,7 @@
 
 [notifications]
 # If you want to go silent, set this to false. But not recommended
-notify_when_attempting_to_solve = true
+notify_when_attempting_to_solve = false
 
 [image_solver]
 enabled = false # Change this to true to enable
